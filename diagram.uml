@@ -1,0 +1,106 @@
+@startuml
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam wrapWidth 200
+
+package "API Adapter (api)" {
+  [PosController] <<controller>>
+  [UserController] <<controller>>  # TODO
+  [PosDtoMapper] <<mapper>>
+  [UserDtoMapper] <<mapper>>       # TODO
+  class PosDto
+  class UserDto
+  [ErrorResponse]
+  [ControllerUtils]
+}
+
+package "Domain Core (domain)" {
+  class Pos
+  class User                      # TODO
+  interface PosService <<port>>
+  interface UserService <<port>>  # TODO
+  interface PosDataService <<port>>
+  interface UserDataService <<port>>  # TODO
+  interface OsmDataService <<port>>
+
+  [PosServiceImpl] <<service>>
+  [UserServiceImpl] <<service>>       # TODO
+
+  class OsmNode
+  enum OsmAmenity
+}
+
+package "Data Adapter (data)" {
+  [PosDataServiceImpl] <<adapter>>
+  [UserDataServiceImpl] <<adapter>>       # TODO
+  class PosEntity <<entity>>
+  class UserEntity <<entity>>
+  [PosEntityMapper] <<mapper>>
+  [UserEntityMapper] <<mapper>>
+  [PosRepository] <<repository>>
+  [UserRepository] <<repository>>
+  [ConstraintViolationChecker]
+}
+
+package "External Systems" {
+  [PostgreSQL DB] <<database>>
+  [OpenStreetMap API] <<external>>
+}
+
+' API -> Domain ports
+[PosController] --> PosService
+[UserController] --> UserService
+
+' API mappers <-> Domain/DTO
+[PosDtoMapper] ..> Pos
+[PosDtoMapper] ..> PosDto
+[UserDtoMapper] ..> User
+[UserDtoMapper] ..> UserDto
+
+' Domain implementations of service ports
+[PosServiceImpl] -|> PosService
+[UserServiceImpl] -|> UserService
+
+' Domain services depend on data ports (and OSM)
+[PosServiceImpl] --> PosDataService
+[PosServiceImpl] --> OsmDataService
+[UserServiceImpl] --> UserDataService
+
+' Data adapters implement data ports
+[PosDataServiceImpl] -|> PosDataService
+[UserDataServiceImpl] -|> UserDataService
+
+' Data adapters use repositories and mappers
+[PosDataServiceImpl] --> [PosRepository]
+[PosDataServiceImpl] --> [PosEntityMapper]
+[UserDataServiceImpl] --> [UserRepository]
+[UserDataServiceImpl] --> [UserEntityMapper]
+[PosDataServiceImpl] --> [ConstraintViolationChecker]
+[UserDataServiceImpl] --> [ConstraintViolationChecker]
+
+' Entity mappers map Domain <-> Entity
+[PosEntityMapper] ..> Pos
+[PosEntityMapper] ..> PosEntity
+[UserEntityMapper] ..> User
+[UserEntityMapper] ..> UserEntity
+
+' Repositories talk to DB
+[PosRepository] --> [PostgreSQL DB]
+[UserRepository] --> [PostgreSQL DB]
+
+' OSM port talks to external API (adapter not shown)
+OsmDataService --> [OpenStreetMap API]
+
+note right of [UserController]
+  TODO: Implement endpoints under /api/users:
+  - GET all, GET by id, GET /filter?loginName=...
+  - POST create, PUT update, DELETE by id
+end note
+
+note right of User
+  TODO: Domain record fields:
+  id, createdAt, updatedAt,
+  loginName, emailAddress,
+  firstName, lastName
+end note
+@enduml
